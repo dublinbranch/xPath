@@ -8,7 +8,9 @@ class XPath {
       public:
 	void read(const char* data, int size);
 	void read(const QByteArray& data);
-
+	XPath() = default;
+	XPath(const QByteArray& data);
+	XPath(const QString& data);
 	/**
 	 * @brief getLeaf is meant for extracting a SINGLE leaf, if multiple are founded only the first is returned!
 	 * This is just a helper function for quick stuff
@@ -16,9 +18,11 @@ class XPath {
 	 * @param founded is just to check if
 	 * @return
 	 */
-	QByteArray     getLeaf(const char* path, uint& founded);
-	QByteArrayList getLeafs(const char* path);
-	xmlDocPtr      doc;
+	QByteArray         getLeaf(const char* path, uint& founded);
+	QByteArray         getLeaf(const char* path);
+	QByteArrayList     getLeafs(const char* path);
+	xmlDocPtr          doc;
+	xmlXPathContextPtr xpath_ctx = nullptr;
 };
 
 #endif // dbXpath
