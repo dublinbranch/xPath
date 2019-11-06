@@ -18,11 +18,13 @@ class XPath {
 	 * @param founded is just to check if
 	 * @return
 	 */
-	QByteArray         getLeaf(const char* path, uint& founded);
-	QByteArray         getLeaf(const char* path);
-	QByteArrayList     getLeafs(const char* path);
-	xmlDocPtr          doc;
-	xmlXPathContextPtr xpath_ctx = nullptr;
+	QByteArray                            getLeaf(const char* path, uint& founded);
+	QByteArray                            getLeaf(const char* path);
+	QByteArrayList                        getLeafs(const char* path);
+	std::vector<std::vector<const char*>> getLeafs(std::vector<const char*> path, xmlNodeSetPtr nodes);
+	xmlNodeSetPtr                         getNodes(const char* path);
+	xmlDocPtr                             doc;
+	xmlXPathContextPtr                    xpath_ctx = nullptr;
 };
 
 #endif // dbXpath
