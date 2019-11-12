@@ -3,7 +3,12 @@
 #include <libxml/xpathInternals.h>
 
 void XPath::read(const char* data, int size) {
-	doc       = xmlParseMemory(data, size);
+	doc               = xmlParseMemory(data, size);
+	xmlErrorPtr error = xmlGetLastError();
+	if (error != nullptr) {
+		qCritical() << "Failed to parse document \n " << error->message;
+		return;
+	}
 	xpath_ctx = xmlXPathNewContext(doc);
 }
 
@@ -33,6 +38,28 @@ QByteArray XPath::getLeaf(const char* path, uint& founded) {
 QByteArray XPath::getLeaf(const char* path) {
 	uint num;
 	return getLeaf(path, num);
+}
+
+QByteArray XPath::getLeaf(const char* path, xmlNodePtr node) {
+	QByteArray        res;
+	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
+	if (xpathObj == nullptr) {
+		return res;
+	} else {
+		auto nodes = xpathObj->nodesetval;
+		if (nodes->nodeNr == 0) {
+			return res;
+		}
+		auto node = nodes->nodeTab[0];
+		auto vv   = xmlNodeGetContent(node);
+		if (vv != nullptr) {
+			res.setRawData((const char*)vv, strlen((const char*)vv));
+		}
+		//		for (int var = 0; var < nodes->nodeNr; ++var) {
+
+		//		}
+	}
+	return res;
 }
 
 QByteArrayList XPath::getLeafs(const char* path) {
@@ -93,4 +120,97 @@ xmlNodeSetPtr XPath::getNodes(const char* path) {
 	}
 	auto nodes = xpathObj->nodesetval;
 	return nodes;
+}
+
+xmlNodePtr XmlNode::getNode(const char* path) {
+	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
+	if (xpathObj == nullptr) {
+		return nullptr;
+	}
+	auto nodes = xpathObj->nodesetval;
+	if (nodes->nodeNr == 0) {
+		return nullptr;
+	}
+	return nodes->nodeTab[0];
+}
+
+QByteArray XmlNode::getLeaf(const char* path) {
+	QByteArray        res;
+	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
+	if (xpathObj == nullptr) {
+		return res;
+	} else {
+		auto nodes = xpathObj->nodesetval;
+		if (nodes->nodeNr == 0) {
+			return res;
+		}
+		auto node = nodes->nodeTab[0];
+		auto vv   = xmlNodeGetContent(node);
+		if (vv != nullptr) {
+			res.setRawData((const char*)vv, strlen((const char*)vv));
+		}
+		//		for (int var = 0; var < nodes->nodeNr; ++var) {
+
+		//		}
+	}
+	return res;
+}
+
+void XmlNode::swapLeaf(const char* path, double& val) {
+	val = getLeaf(path).toDouble();
+}
+
+void XmlNode::swapLeaf(const char* path, quint64& val) {
+	val = getLeaf(path).toULongLong();
+}
+
+void XmlNode::swapLeaf(const char* path, QString& val) {
+	val = getLeaf(path);
+}
+
+void XmlNode::swapLeaf(const char* path, QByteArray& val) {
+	val = getLeaf(path);
+}
+
+void XmlNode::swapLeafValue(const char* path, double& val) {
+	auto node = getNode(path);
+	if (node) {
+		val = getValue(node).toDouble();
+	}
+}
+
+void XmlNode::swapLeafValue(const char* path, quint64& val) {
+	auto node = getNode(path);
+	if (node) {
+		val = getValue(node).toULongLong();
+	}
+}
+
+void XmlNode::swapLeafValue(const char* path, QString& val) {
+	auto node = getNode(path);
+	if (node) {
+		val = getValue(node);
+	}
+}
+
+void XmlNode::swapLeafValue(const char* path, QByteArray& val) {
+	auto node = getNode(path);
+	if (node) {
+		val = getValue(node);
+	}
+}
+
+QByteArray XmlNode::swapLeafValue(const char* path) {
+	auto node = getNode(path);
+	if (node) {
+		return getValue(node);
+	}
+	return QByteArray();
+}
+
+QByteArray XmlNode::getValue(const xmlNodePtr node) {
+	QByteArray q;
+	auto       vv = xmlGetProp(node, (const xmlChar*)"value");
+	q.setRawData((const char*)vv, strlen((const char*)vv));
+	return q;
 }

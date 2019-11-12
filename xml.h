@@ -20,6 +20,7 @@ class XPath {
 	 */
 	QByteArray                            getLeaf(const char* path, uint& founded);
 	QByteArray                            getLeaf(const char* path);
+	QByteArray                            getLeaf(const char* path, xmlNodePtr node);
 	QByteArrayList                        getLeafs(const char* path);
 	std::vector<std::vector<const char*>> getLeafs(std::vector<const char*> path, xmlNodeSetPtr nodes);
 	xmlNodeSetPtr                         getNodes(const char* path);
@@ -27,4 +28,27 @@ class XPath {
 	xmlXPathContextPtr                    xpath_ctx = nullptr;
 };
 
+class XmlNode {
+      public:
+	XPath*     xml  = nullptr;
+	xmlNodePtr node = nullptr;
+	xmlNodePtr getNode(const char* path);
+	QByteArray getLeaf(const char* path);
+	void swapLeaf(const char* path, double& val);
+	void swapLeaf(const char* path, quint64& val);
+	void swapLeaf(const char* path, QString& val);
+	void swapLeaf(const char* path, QByteArray& val);
+
+	void swapLeafValue(const char* path, double& val);
+	void swapLeafValue(const char* path, quint64& val);
+	void swapLeafValue(const char* path, QString& val);
+	void swapLeafValue(const char* path, QByteArray& val);
+	QByteArray swapLeafValue(const char* path);
+
+
+	void swapAttr(const char* path, QByteArray& val);
+	QByteArray getValue(const xmlNodePtr node);
+};
+
 #endif // dbXpath
+
