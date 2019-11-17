@@ -116,12 +116,14 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 }
 
 xmlNodeSetPtr XPath::getNodes(const char* path) {
+
 	xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path, xpath_ctx);
+
 	if (xpathObj == nullptr) {
 		return nullptr;
 	}
 	auto nodes = xpathObj->nodesetval;
-	xmlXPathFreeObject(xpathObj);
+
 	return nodes;
 }
 
