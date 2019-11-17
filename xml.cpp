@@ -72,8 +72,10 @@ QByteArrayList XPath::getLeafs(const char* path) {
 		auto node = nodes->nodeTab[var];
 		auto vv   = xmlNodeGetContent(node);
 		if (vv != nullptr) {
-			QByteArray v = QByteArray::fromRawData((const char*)vv, strlen((const char*)vv));
+			QByteArray v;
+			v.append((const char*)vv, strlen((const char*)vv));
 			res.append(v);
+			xmlFree(vv);
 		}
 		//printf("%s \n", vv);
 		//		auto v1  = QString("//*[@id='field-table']/tbody/tr[%1]/th").arg(var).toUtf8();
@@ -119,6 +121,7 @@ xmlNodeSetPtr XPath::getNodes(const char* path) {
 		return nullptr;
 	}
 	auto nodes = xpathObj->nodesetval;
+	xmlXPathFreeObject(xpathObj);
 	return nodes;
 }
 
