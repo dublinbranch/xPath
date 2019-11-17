@@ -65,7 +65,7 @@ QByteArray XPath::getLeaf(const char* path, xmlNodePtr node) {
 QByteArrayList XPath::getLeafs(const char* path) {
 	QByteArrayList res;
 	auto           nodes = getNodes(path);
-	if (nodes == nullptr) {
+	if (nodes.get() == nullptr) {
 		return res;
 	}
 	for (int var = 0; var < nodes->nodeNr; ++var) {
@@ -115,16 +115,14 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 	return res;
 }
 
-xmlNodeSetPtr XPath::getNodes(const char* path) {
-
+xmlXPathObjectOwned XPath::getNodes(const char* path) {
 	xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path, xpath_ctx);
-
 	if (xpathObj == nullptr) {
 		return nullptr;
 	}
-	auto nodes = xpathObj->nodesetval;
-
-	return nodes;
+	
+	xmlXPathObjectOwned own(xpathObj);
+	return own;	
 }
 
 xmlNodePtr XmlNode::getNode(const char* path) {
