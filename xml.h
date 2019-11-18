@@ -4,28 +4,7 @@
 #include <QByteArrayList>
 #include <libxml/xpath.h>
 
-class xmlXPathObjectOwned {
-      public:
-	xmlXPathObjectOwned(xmlXPathObjectPtr ptr) {
-		this->ptr = ptr;
-	}
-	~xmlXPathObjectOwned() {
-		xmlXPathFreeObject(ptr);
-	}
-	xmlXPathObjectPtr get(){
-		return ptr;
-	}
-	xmlNodeSetPtr operator->() {
-		if(ptr == nullptr){
-			return nullptr;
-		}
-		return ptr->nodesetval;
-	}
-
-      private:
-	xmlXPathObjectPtr ptr = nullptr;
-};
-
+class XmlNode;
 class XPath {
       public:
 	void read(const char* data, int size);
@@ -33,6 +12,7 @@ class XPath {
 	XPath() = default;
 	XPath(const QByteArray& data);
 	XPath(const QString& data);
+	~XPath();
 	/**
 	 * @brief getLeaf is meant for extracting a SINGLE leaf, if multiple are founded only the first is returned!
 	 * This is just a helper function for quick stuff
@@ -45,30 +25,20 @@ class XPath {
 	QByteArray                            getLeaf(const char* path, xmlNodePtr node);
 	QByteArrayList                        getLeafs(const char* path);
 	std::vector<std::vector<const char*>> getLeafs(std::vector<const char*> path, xmlNodeSetPtr nodes);
-	xmlXPathObjectOwned                   getNodes(const char* path);
+	std::vector<XmlNode>                  getNodes(const char* path, xmlNodePtr node = nullptr, uint limit = 0xFFFFFFFF);
 	xmlDocPtr                             doc;
 	xmlXPathContextPtr                    xpath_ctx = nullptr;
 };
 
 class XmlNode {
       public:
-	XPath*     xml  = nullptr;
-	xmlNodePtr node = nullptr;
-	xmlNodePtr getNode(const char* path);
-	QByteArray getLeaf(const char* path);
-	void       swapLeaf(const char* path, double& val);
-	void       swapLeaf(const char* path, quint64& val);
-	void       swapLeaf(const char* path, QString& val);
-	void       swapLeaf(const char* path, QByteArray& val);
-
-	void       swapLeafValue(const char* path, double& val);
-	void       swapLeafValue(const char* path, quint64& val);
-	void       swapLeafValue(const char* path, QString& val);
-	void       swapLeafValue(const char* path, QByteArray& val);
-	QByteArray swapLeafValue(const char* path);
-
-	void       swapAttr(const char* path, QByteArray& val);
-	QByteArray getValue(const xmlNodePtr node);
+	XPath*               xml  = nullptr;
+	xmlNodePtr           node = nullptr;
+	XmlNode              searchNode(const char* path);
+	std::vector<XmlNode> searchNodes(const char* path);
+	QByteArray           searchLeaf(const char* path);
+	QByteArray           getProp(const char* property);
+	QByteArray           getContent();
 };
 
 #endif // dbXpath

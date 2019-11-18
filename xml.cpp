@@ -24,6 +24,11 @@ XPath::XPath(const QString& data) {
 	read(data.toUtf8());
 }
 
+XPath::~XPath() {
+	 xmlXPathFreeContext(xpath_ctx); 
+	 xmlFreeDoc(doc); 
+}
+
 QByteArray XPath::getLeaf(const char* path, uint& founded) {
 	auto list = getLeafs(path);
 	if (list.isEmpty()) {
@@ -65,24 +70,14 @@ QByteArray XPath::getLeaf(const char* path, xmlNodePtr node) {
 QByteArrayList XPath::getLeafs(const char* path) {
 	QByteArrayList res;
 	auto           nodes = getNodes(path);
-	if (nodes.get() == nullptr) {
-		return res;
-	}
-	for (int var = 0; var < nodes->nodeNr; ++var) {
-		auto node = nodes->nodeTab[var];
-		auto vv   = xmlNodeGetContent(node);
+	for (auto&& node : nodes) {
+
+		auto vv = node.getContent();
 		if (vv != nullptr) {
 			QByteArray v;
 			v.append((const char*)vv, strlen((const char*)vv));
 			res.append(v);
-			xmlFree(vv);
 		}
-		//printf("%s \n", vv);
-		//		auto v1  = QString("//*[@id='field-table']/tbody/tr[%1]/th").arg(var).toUtf8();
-		//		auto v   = v1.constData();
-		//		auto ptr = xmlXPathEvalExpression((xmlChar*)v, xpath_ctx)->nodesetval;
-		//		auto vv  = xmlNodeGetContent(ptr->nodeTab[0]);
-		//		printf("%s \n", vv);
 	}
 	return res;
 }
@@ -115,29 +110,50 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 	return res;
 }
 
-xmlXPathObjectOwned XPath::getNodes(const char* path) {
-	xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path, xpath_ctx);
-	if (xpathObj == nullptr) {
-		return nullptr;
+std::vector<XmlNode> XPath::getNodes(const char* path, xmlNodePtr node, uint limit) {
+	std::vector<XmlNode> nodeVec;
+	xmlXPathObjectPtr    xpathObj;
+	if (node) {
+		xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
+	} else {
+		xpathObj = xmlXPathEvalExpression((const xmlChar*)path, xpath_ctx);
 	}
-	
-	xmlXPathObjectOwned own(xpathObj);
-	return own;	
+
+	if (xpathObj == nullptr) { //in case of invalid xpath
+		xmlXPathFreeObject(xpathObj);
+		return nodeVec;
+	} else {
+		auto nodes = xpathObj->nodesetval;
+		if (nodes->nodeNr == 0) {
+			return nodeVec;
+		}
+		for (uint var = 0; var < nodes->nodeNr; ++var) {
+			if(var >= limit){
+				break;
+			}
+			auto    node = nodes->nodeTab[var];
+			XmlNode nod{this, node};
+			nodeVec.push_back(nod);
+			
+		}
+	}
+	xmlXPathFreeObject(xpathObj);
+	return nodeVec;
 }
 
-xmlNodePtr XmlNode::getNode(const char* path) {
-	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
-	if (xpathObj == nullptr) {
-		return nullptr;
+XmlNode XmlNode::searchNode(const char* path) {
+	auto nodes = xml->getNodes(path, node, 1);
+	if (nodes.empty()) {
+		return XmlNode();
 	}
-	auto nodes = xpathObj->nodesetval;
-	if (nodes->nodeNr == 0) {
-		return nullptr;
-	}
-	return nodes->nodeTab[0];
+	return nodes.at(0);
 }
 
-QByteArray XmlNode::getLeaf(const char* path) {
+std::vector<XmlNode> XmlNode::searchNodes(const char* path) {
+	return xml->getNodes(path, node);
+}
+
+QByteArray XmlNode::searchLeaf(const char* path) {
 	QByteArray        res;
 	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
 	if (xpathObj == nullptr) {
@@ -159,61 +175,21 @@ QByteArray XmlNode::getLeaf(const char* path) {
 	return res;
 }
 
-void XmlNode::swapLeaf(const char* path, double& val) {
-	val = getLeaf(path).toDouble();
-}
-
-void XmlNode::swapLeaf(const char* path, quint64& val) {
-	val = getLeaf(path).toULongLong();
-}
-
-void XmlNode::swapLeaf(const char* path, QString& val) {
-	val = getLeaf(path);
-}
-
-void XmlNode::swapLeaf(const char* path, QByteArray& val) {
-	val = getLeaf(path);
-}
-
-void XmlNode::swapLeafValue(const char* path, double& val) {
-	auto node = getNode(path);
-	if (node) {
-		val = getValue(node).toDouble();
-	}
-}
-
-void XmlNode::swapLeafValue(const char* path, quint64& val) {
-	auto node = getNode(path);
-	if (node) {
-		val = getValue(node).toULongLong();
-	}
-}
-
-void XmlNode::swapLeafValue(const char* path, QString& val) {
-	auto node = getNode(path);
-	if (node) {
-		val = getValue(node);
-	}
-}
-
-void XmlNode::swapLeafValue(const char* path, QByteArray& val) {
-	auto node = getNode(path);
-	if (node) {
-		val = getValue(node);
-	}
-}
-
-QByteArray XmlNode::swapLeafValue(const char* path) {
-	auto node = getNode(path);
-	if (node) {
-		return getValue(node);
-	}
-	return QByteArray();
-}
-
-QByteArray XmlNode::getValue(const xmlNodePtr node) {
+QByteArray XmlNode::getProp(const char* property) {
 	QByteArray q;
-	auto       vv = xmlGetProp(node, (const xmlChar*)"value");
-	q.setRawData((const char*)vv, strlen((const char*)vv));
+	auto       vv = xmlGetProp(node, (const xmlChar*)property);
+	q.append((const char*)vv, strlen((const char*)vv));
+	xmlFree(vv);
 	return q;
+}
+
+QByteArray XmlNode::getContent() {
+	auto       vv = xmlNodeGetContent(node);
+	QByteArray res;
+	if (vv != nullptr) {
+		res.append((const char*)vv, strlen((const char*)vv));
+		xmlFree(vv);
+	} else {
+		return res;
+	}
 }
