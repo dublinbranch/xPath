@@ -1,6 +1,7 @@
 #include "xml.h"
 #include <QDebug>
 #include <libxml/xpathInternals.h>
+#include "define.h"
 
 void XPath::read(const char* data, int size) {
 	doc               = xmlParseMemory(data, size);
@@ -192,3 +193,11 @@ QByteArray XmlNode::getContent() {
 		return res;
 	}
 }
+
+XmlNode XmlNode::operator[](const char *path) {
+	//AdGroupId
+	QByteArray pathFull = QBL("./*[name()='") + path + QBL("']");
+	return searchNode(pathFull.constData());
+}
+
+

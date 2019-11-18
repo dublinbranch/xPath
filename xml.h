@@ -39,6 +39,7 @@ class XmlNode {
 	QByteArray           searchLeaf(const char* path);
 	QByteArray           getProp(const char* property);
 	QByteArray           getContent();
+	XmlNode              operator[](const char* path);
 };
 
 #endif // dbXpath
