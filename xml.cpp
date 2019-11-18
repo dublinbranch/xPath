@@ -25,8 +25,8 @@ XPath::XPath(const QString& data) {
 }
 
 XPath::~XPath() {
-	 xmlXPathFreeContext(xpath_ctx); 
-	 xmlFreeDoc(doc); 
+	xmlXPathFreeContext(xpath_ctx);
+	xmlFreeDoc(doc);
 }
 
 QByteArray XPath::getLeaf(const char* path, uint& founded) {
@@ -128,13 +128,12 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNodePtr node, uint lim
 			return nodeVec;
 		}
 		for (uint var = 0; var < nodes->nodeNr; ++var) {
-			if(var >= limit){
+			if (var >= limit) {
 				break;
 			}
 			auto    node = nodes->nodeTab[var];
 			XmlNode nod{this, node};
 			nodeVec.push_back(nod);
-			
 		}
 	}
 	xmlXPathFreeObject(xpathObj);
