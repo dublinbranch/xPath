@@ -34,7 +34,9 @@ QByteArray XPath::getLeaf(const char* path, uint& founded) {
 	auto list = getLeafs(path);
 	if (list.isEmpty()) {
 		founded = 0;
-		qDebug() << "no result for " << path;
+		if(xmlVerbose){
+			qDebug() << "no result for " << path;
+		}
 		return QByteArray();
 	}
 	founded = list.size();

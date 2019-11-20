@@ -4,6 +4,9 @@
 #include <QByteArrayList>
 #include <libxml/xpath.h>
 
+//this toggles several qDebug in the code to print or not in case of missing value
+inline thread_local bool xmlVerbose = true;
+
 class XmlNode;
 class XPath {
       public:
@@ -20,7 +23,7 @@ class XPath {
 	 * @param founded is just to check if
 	 * @return
 	 */
-	QByteArray                            getLeaf(const char* path, uint& founded);
+	QByteArray                            getLeaf(const char* path, uint &founded);
 	QByteArray                            getLeaf(const char* path);
 	QByteArray                            getLeaf(const char* path, xmlNodePtr node);
 	QByteArrayList                        getLeafs(const char* path);
