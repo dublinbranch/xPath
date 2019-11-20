@@ -191,13 +191,12 @@ QByteArray XmlNode::getContent() {
 	if (vv != nullptr) {
 		res.append((const char*)vv, strlen((const char*)vv));
 		xmlFree(vv);
-	} else {
-		return res;
 	}
+	return res;
 }
 
 XmlNode XmlNode::operator[](const char *path) {
-	//AdGroupId
+	//this is a start from here XPath! what you most expect from a [] ...
 	QByteArray pathFull = QBL("./*[name()='") + path + QBL("']");
 	return searchNode(pathFull.constData());
 }
