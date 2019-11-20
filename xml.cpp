@@ -34,7 +34,7 @@ QByteArray XPath::getLeaf(const char* path, uint& founded) {
 	auto list = getLeafs(path);
 	if (list.isEmpty()) {
 		founded = 0;
-		qCritical() << "no result for " << path;
+		qDebug() << "no result for " << path;
 		return QByteArray();
 	}
 	founded = list.size();
@@ -178,8 +178,10 @@ QByteArray XmlNode::searchLeaf(const char* path) {
 QByteArray XmlNode::getProp(const char* property) {
 	QByteArray q;
 	auto       vv = xmlGetProp(node, (const xmlChar*)property);
-	q.append((const char*)vv, strlen((const char*)vv));
-	xmlFree(vv);
+	if(vv != nullptr){
+		q.append((const char*)vv, strlen((const char*)vv));
+		xmlFree(vv);
+	}
 	return q;
 }
 
