@@ -1,7 +1,7 @@
 #include "xml.h"
 #include <QDebug>
 #include <libxml/xpathInternals.h>
-#include "define.h"
+#include "define/define.h"
 
 void XPath::read(const char* data, int size) {
 	doc               = xmlParseMemory(data, size);
