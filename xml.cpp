@@ -125,7 +125,7 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNodePtr node, uint lim
 		xpathObj = xmlXPathEvalExpression((const xmlChar*)path, xpath_ctx);
 	}
 
-	if (xpathObj == nullptr) { //in case of invalid xpath
+	if (xpathObj == nullptr || xpathObj->nodesetval == nullptr) { //in case of invalid xpath
 		xmlXPathFreeObject(xpathObj);
 		return nodeVec;
 	} else {
