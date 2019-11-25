@@ -10,8 +10,8 @@ inline thread_local bool xmlVerbose = true;
 class XmlNode;
 class XPath {
       public:
-	void read(const char* data, int size);
-	void read(const QByteArray& data);
+	bool read(const char* data, int size);
+	bool read(const QByteArray& data);
 	XPath() = default;
 	XPath(const QByteArray& data);
 	XPath(const QString& data);
@@ -23,7 +23,7 @@ class XPath {
 	 * @param founded is just to check if
 	 * @return
 	 */
-	QByteArray                            getLeaf(const char* path, uint &founded);
+	QByteArray                            getLeaf(const char* path, uint& founded);
 	QByteArray                            getLeaf(const char* path);
 	QByteArray                            getLeaf(const char* path, xmlNodePtr node);
 	QByteArrayList                        getLeafs(const char* path);
@@ -35,14 +35,15 @@ class XPath {
 
 class XmlNode {
       public:
-	XPath*               xml  = nullptr;
-	xmlNodePtr           node = nullptr;
-	XmlNode              searchNode(const char* path);
-	std::vector<XmlNode> searchNodes(const char* path);
-	QByteArray           searchLeaf(const char* path);
-	QByteArray           getProp(const char* property);
-	QByteArray           getContent();
-	XmlNode              operator[](const char* path);
+	XPath*                       xml  = nullptr;
+	xmlNodePtr                   node = nullptr;
+	XmlNode                      searchNode(const char* path) const;
+	std::vector<XmlNode>         searchNodes(const char* path) const;
+	QByteArray                   searchLeaf(const char* path) const;
+	QByteArray                   getProp(const char* property) const;
+	std::vector<QByteArray> getAllProp() const;
+	QByteArray                   getContent() const;
+	XmlNode                      operator[](const char* path) const;
 };
 
 #endif // dbXpath

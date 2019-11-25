@@ -1,19 +1,20 @@
 #include "xml.h"
+#include "define/define.h"
 #include <QDebug>
 #include <libxml/xpathInternals.h>
-#include "define/define.h"
 
-void XPath::read(const char* data, int size) {
+bool XPath::read(const char* data, int size) {
 	doc               = xmlParseMemory(data, size);
 	xmlErrorPtr error = xmlGetLastError();
 	if (error != nullptr) {
 		qCritical() << "Failed to parse document \n " << error->message;
-		return;
+		return false;
 	}
 	xpath_ctx = xmlXPathNewContext(doc);
+	return true;
 }
 
-void XPath::read(const QByteArray& data) {
+bool XPath::read(const QByteArray& data) {
 	read(data.constData(), data.size());
 }
 
@@ -28,13 +29,15 @@ XPath::XPath(const QString& data) {
 XPath::~XPath() {
 	xmlXPathFreeContext(xpath_ctx);
 	xmlFreeDoc(doc);
+	doc = nullptr;
+	xpath_ctx = nullptr;
 }
 
 QByteArray XPath::getLeaf(const char* path, uint& founded) {
 	auto list = getLeafs(path);
 	if (list.isEmpty()) {
 		founded = 0;
-		if(xmlVerbose){
+		if (xmlVerbose) {
 			qDebug() << "no result for " << path;
 		}
 		return QByteArray();
@@ -143,7 +146,7 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNodePtr node, uint lim
 	return nodeVec;
 }
 
-XmlNode XmlNode::searchNode(const char* path) {
+XmlNode XmlNode::searchNode(const char* path) const {
 	auto nodes = xml->getNodes(path, node, 1);
 	if (nodes.empty()) {
 		return XmlNode();
@@ -151,11 +154,11 @@ XmlNode XmlNode::searchNode(const char* path) {
 	return nodes.at(0);
 }
 
-std::vector<XmlNode> XmlNode::searchNodes(const char* path) {
+std::vector<XmlNode> XmlNode::searchNodes(const char* path) const {
 	return xml->getNodes(path, node);
 }
 
-QByteArray XmlNode::searchLeaf(const char* path) {
+QByteArray XmlNode::searchLeaf(const char* path) const {
 	QByteArray        res;
 	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
 	if (xpathObj == nullptr) {
@@ -177,17 +180,41 @@ QByteArray XmlNode::searchLeaf(const char* path) {
 	return res;
 }
 
-QByteArray XmlNode::getProp(const char* property) {
+void walkTree(xmlNode * a_node)
+{
+   xmlNode *cur_node = NULL;
+   xmlAttr *cur_attr = NULL;
+   xmlChar *attr;
+   for (cur_node = a_node; cur_node; cur_node = cur_node->next) {
+   // do something with that node information, like… printing the tag’s name and attributes
+   printf("Got tag : %s\n", cur_node->name);
+   for (cur_attr = cur_node->properties; cur_attr; cur_attr = cur_attr->next) {
+
+	  printf("  -> with attribute : %s\n", cur_attr->name);
+   }
+  walkTree(cur_node->children);
+}
+}
+QByteArray XmlNode::getProp(const char* property) const {
 	QByteArray q;
 	auto       vv = xmlGetProp(node, (const xmlChar*)property);
-	if(vv != nullptr){
+	if (vv != nullptr) {
 		q.append((const char*)vv, strlen((const char*)vv));
 		xmlFree(vv);
 	}
 	return q;
 }
 
-QByteArray XmlNode::getContent() {
+std::vector<QByteArray> XmlNode::getAllProp() const {
+	//walkTree(node);
+	std::vector<QByteArray> res;
+	for (xmlAttrPtr attr = node->properties; nullptr != attr; attr = attr->next) {
+		res.push_back(QByteArray((char*)attr->name));
+	}
+	return res;
+}
+
+QByteArray XmlNode::getContent() const {
 	auto       vv = xmlNodeGetContent(node);
 	QByteArray res;
 	if (vv != nullptr) {
@@ -197,10 +224,8 @@ QByteArray XmlNode::getContent() {
 	return res;
 }
 
-XmlNode XmlNode::operator[](const char *path) {
+XmlNode XmlNode::operator[](const char* path) const {
 	//this is a start from here XPath! what you most expect from a [] ...
 	QByteArray pathFull = QBL("./*[name()='") + path + QBL("']");
 	return searchNode(pathFull.constData());
 }
-
-
