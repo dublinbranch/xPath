@@ -29,7 +29,7 @@ class XPath {
 	QByteArrayList                        getLeafs(const char* path);
 	std::vector<std::vector<const char*>> getLeafs(std::vector<const char*> path, xmlNodeSetPtr nodes);
 	std::vector<XmlNode>                  getNodes(const char* path, xmlNodePtr node = nullptr, uint limit = 0xFFFFFFFF);
-	xmlDocPtr                             doc;
+	xmlDocPtr                             doc = nullptr;
 	xmlXPathContextPtr                    xpath_ctx = nullptr;
 };
 
