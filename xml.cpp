@@ -27,8 +27,13 @@ XPath::XPath(const QString& data) {
 }
 
 XPath::~XPath() {
-	xmlXPathFreeContext(xpath_ctx);
-	xmlFreeDoc(doc);
+	if(doc){
+		xmlFreeDoc(doc);
+	}
+	if(xpath_ctx){
+		xmlXPathFreeContext(xpath_ctx);
+	}
+
 	doc = nullptr;
 	xpath_ctx = nullptr;
 }
