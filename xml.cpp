@@ -1,11 +1,12 @@
 #include "xml.h"
-#include "define/define.h"
+#include "define/qsl.h"
 #include <QDebug>
 #include <libxml/HTMLparser.h>
 #include <libxml/xpathInternals.h>
 
 #define TMP_BUF_SIZE 256
 void errMgr(void* ctx, const char* msg, ...) {
+	(void)ctx;
 	char    string[TMP_BUF_SIZE];
 	va_list arg_ptr;
 	va_start(arg_ptr, msg);
@@ -34,6 +35,7 @@ bool XPath::read(const char* data, int size) {
 
 bool XPath::read(const QByteArray& data) {
 	read(data.constData(), data.size());
+	return true;
 }
 
 XPath::XPath(const QByteArray& data) {
@@ -117,7 +119,7 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 	if (nodes == nullptr) {
 		return res;
 	}
-	for (uint nodePos = 0; nodePos < nodes->nodeNr; ++nodePos) {
+	for (uint nodePos = 0; nodePos < (uint)nodes->nodeNr; ++nodePos) {
 		auto node = nodes->nodeTab[nodePos];
 		for (uint pathPos = 0; pathPos < xPaths.size(); ++pathPos) {
 			auto                      path     = xPaths.at(pathPos);
@@ -156,7 +158,7 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode *node, uint limit
 		if (nodes->nodeNr == 0) {
 			return nodeVec;
 		}
-		for (uint var = 0; var < nodes->nodeNr; ++var) {
+		for (uint var = 0; var < (uint)nodes->nodeNr; ++var) {
 			if (var >= limit) {
 				break;
 			}
@@ -206,7 +208,6 @@ QByteArray XmlNode::searchLeaf(const char* path) const {
 void walkTree(xmlNode* a_node) {
 	xmlNode* cur_node = NULL;
 	xmlAttr* cur_attr = NULL;
-	xmlChar* attr;
 	for (cur_node = a_node; cur_node; cur_node = cur_node->next) {
 		// do something with that node information, like… printing the tag’s name and attributes
 		printf("Got tag : %s\n", cur_node->name);
