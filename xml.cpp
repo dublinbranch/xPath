@@ -26,7 +26,7 @@ bool XPath::read(const char* data, int size) {
 	}
 	xmlErrorPtr error = xmlGetLastError();
 	if (error != nullptr) {
-		qCritical() << "Failed to parse document \n " << error->message << "line" << error->line << error->int1 << error->int2 << error->str1 << error->str2 << error->str3;
+		qWarning().noquote() << "Failed to parse document \n " << error->message << "line" << error->line << error->int1 << error->int2 << error->str1 << error->str2 << error->str3;
 		return false;
 	}
 	xpath_ctx = xmlXPathNewContext(doc);
