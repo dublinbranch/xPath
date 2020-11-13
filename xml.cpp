@@ -4,15 +4,15 @@
 #include <libxml/HTMLparser.h>
 #include <libxml/xpathInternals.h>
 
-#define TMP_BUF_SIZE 256
 void errMgr(void* ctx, const char* msg, ...) {
 	(void)ctx;
-	char    string[TMP_BUF_SIZE];
-	va_list arg_ptr;
+	const uint TMP_BUF_SIZE = 1024;
+	char       string[TMP_BUF_SIZE];
+	va_list    arg_ptr;
 	va_start(arg_ptr, msg);
 	vsnprintf(string, TMP_BUF_SIZE, msg, arg_ptr);
 	va_end(arg_ptr);
-    qDebug() << string;
+	qDebug() << string;
 	return;
 }
 
@@ -113,7 +113,7 @@ QByteArrayList XPath::getLeafs(const char* path) {
 	return res;
 }
 
-std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> xPaths, xmlNodeSet *nodes) {
+std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> xPaths, xmlNodeSet* nodes) {
 	std::vector<std::vector<const char*>> res;
 	res.resize(nodes->nodeNr);
 	if (nodes == nullptr) {
@@ -141,7 +141,7 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 	return res;
 }
 
-std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode *node, uint limit) {
+std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode* node, uint limit) {
 	std::vector<XmlNode> nodeVec;
 	xmlXPathObjectPtr    xpathObj;
 	if (node) {
