@@ -5,14 +5,15 @@
 //Forward declaration slightly difficult
 #include <libxml/xpath.h>
 
-//this toggles several qDebug in the code to print or not in case of missing value
-inline thread_local bool xmlVerbose = true;
-
 class XmlNode;
 class XPath {
       public:
-	bool read(const char* data, int size);
-	bool read(const QByteArray& data);
+	struct Res {
+		bool    ok = false;
+		QString msg;
+	};
+	Res read(const char* data, int size);
+	Res read(const QByteArray& data);
 	XPath() = default;
 	XPath(const QByteArray& data);
 	XPath(const QString& data);

@@ -1,9 +1,10 @@
 #include "xml.h"
 #include "define/qsl.h"
-#include <QDebug>
 #include <libxml/HTMLparser.h>
 #include <libxml/xpathInternals.h>
 
+/* only for debug, 
+#include <QDebug>
 void errMgr(void* ctx, const char* msg, ...) {
 	(void)ctx;
 	const uint TMP_BUF_SIZE = 1024;
@@ -15,8 +16,10 @@ void errMgr(void* ctx, const char* msg, ...) {
 	qDebug() << string;
 	return;
 }
+*/
 
-bool XPath::read(const char* data, int size) {
+XPath::Res XPath::read(const char* data, int size) {
+
 	//xmlSetGenericErrorFunc(NULL, errMgr);
 	if (HTMLMode) {
 		//Optionally cleaned before by libTidy + some hand made tweak if needed
@@ -26,16 +29,23 @@ bool XPath::read(const char* data, int size) {
 	}
 	xmlErrorPtr error = xmlGetLastError();
 	if (error != nullptr) {
-		qWarning().noquote() << "Failed to parse document \n " << error->message << "line" << error->line << error->int1 << error->int2 << error->str1 << error->str2 << error->str3;
-		return false;
+		auto msg = QSL("Failed to parse document msg: %7\n line: %1 : %2 : %3 \n msg %4 \n %5 \n %6 ")
+		               .arg(error->line)
+		               .arg(error->int1)
+		               .arg(error->int2)
+		               .arg(error->str1)
+		               .arg(error->str2)
+		               .arg(error->str3)
+		               .arg(error->message);
+		return Res{false, msg};
 	}
 	xpath_ctx = xmlXPathNewContext(doc);
-	return true;
+	return Res{true, QString()};
 }
 
-bool XPath::read(const QByteArray& data) {
-	read(data.constData(), data.size());
-	return true;
+XPath::Res XPath::read(const QByteArray& data) {
+	auto res = read(data.constData(), data.size());
+	return res;
 }
 
 XPath::XPath(const QByteArray& data) {
@@ -62,9 +72,6 @@ QByteArray XPath::getLeaf(const char* path, uint& founded) {
 	auto list = getLeafs(path);
 	if (list.isEmpty()) {
 		founded = 0;
-		if (xmlVerbose) {
-			qDebug() << "no result for " << path;
-		}
 		return QByteArray();
 	}
 	founded = list.size();
