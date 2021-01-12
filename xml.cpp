@@ -21,11 +21,17 @@ void errMgr(void* ctx, const char* msg, ...) {
 XPath::Res XPath::read(const char* data, int size) {
 
 	//xmlSetGenericErrorFunc(NULL, errMgr);
+	/*
+	 * HTML_PARSE_NONET because 99.999% of the doc stuff is either wrong or offline by 15+ year
+	 * HTML_PARSE_NOWARNING else will forcefully print message, no thanks
+	 * HTML_PARSE_NOERROR same, but for error
+	 */
+	auto flag = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
 	if (HTMLMode) {
 		//Optionally cleaned before by libTidy + some hand made tweak if needed
-		doc = htmlReadMemory(data, size, nullptr, "UTF-8", HTML_PARSE_NOBLANKS | HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET | HTML_PARSE_RECOVER);
+		doc = htmlReadMemory(data, size, nullptr, "UTF-8", flag | HTML_PARSE_NOBLANKS | HTML_PARSE_RECOVER);
 	} else {
-		doc = xmlParseMemory(data, size);
+		doc = htmlReadMemory(data, size, nullptr, "UTF-8", flag);
 	}
 	xmlErrorPtr error = xmlGetLastError();
 	if (error != nullptr) {
