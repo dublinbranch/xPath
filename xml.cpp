@@ -31,7 +31,7 @@ XPath::Res XPath::read(const char* data, int size) {
 		//Optionally cleaned before by libTidy + some hand made tweak if needed
 		doc = htmlReadMemory(data, size, nullptr, "UTF-8", flag | HTML_PARSE_NOBLANKS | HTML_PARSE_RECOVER);
 	} else {
-		doc = htmlReadMemory(data, size, nullptr, "UTF-8", flag);
+		doc = xmlParseMemory(data, size);
 	}
 	xmlErrorPtr error = xmlGetLastError();
 	if (error != nullptr) {
