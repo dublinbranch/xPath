@@ -99,8 +99,8 @@ QByteArray XPath::getLeaf(const char* path, xmlNodePtr node) {
 		if (nodes->nodeNr == 0) {
 			return res;
 		}
-		auto node = nodes->nodeTab[0];
-		auto vv   = xmlNodeGetContent(node);
+		auto _node = nodes->nodeTab[0];
+		auto vv    = xmlNodeGetContent(_node);
 		if (vv != nullptr) {
 			res.setRawData((const char*)vv, strlen((const char*)vv));
 		}
