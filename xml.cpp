@@ -141,9 +141,9 @@ std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> x
 			if (xpathObj == nullptr) {
 				return res;
 			}
-			auto nodes = xpathObj->nodesetval;
-			for (int var = 0; var < nodes->nodeNr; ++var) {
-				auto node = nodes->nodeTab[var];
+			auto _nodes = xpathObj->nodesetval;
+			for (int var = 0; var < _nodes->nodeNr; ++var) {
+				auto node = _nodes->nodeTab[var];
 				auto vv   = xmlNodeGetContent(node);
 				if (vv != nullptr) {
 					cur.push_back((const char*)vv);
