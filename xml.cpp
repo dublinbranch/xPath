@@ -175,8 +175,8 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode* node, uint limit
 			if (var >= limit) {
 				break;
 			}
-			auto    node = nodes->nodeTab[var];
-			XmlNode nod{this, node};
+			auto    _node = nodes->nodeTab[var];
+			XmlNode nod{this, _node};
 			nodeVec.push_back(nod);
 		}
 	}
