@@ -1,5 +1,5 @@
 #include "xml.h"
-#include "define/qsl.h"
+#include "rbk/defines/stringDefine.h"
 #include <libxml/HTMLparser.h>
 #include <libxml/xpathInternals.h>
 
