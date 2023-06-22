@@ -1,22 +1,57 @@
 #include "xml.h"
+#include "rbk/QStacker/exceptionv2.h"
 #include "rbk/defines/stringDefine.h"
+#include "rbk/fmtExtra/includeMe.h"
 #include <libxml/HTMLparser.h>
 #include <libxml/xpathInternals.h>
 
-/* only for debug, 
+#include <tidy/tidy.h>
+#include <tidy/tidybuffio.h>
+
+/* only for debug,
 #include <QDebug>
+#include <libxml2/libxml/xpath.h>
 void errMgr(void* ctx, const char* msg, ...) {
-	(void)ctx;
-	const uint TMP_BUF_SIZE = 1024;
-	char       string[TMP_BUF_SIZE];
-	va_list    arg_ptr;
-	va_start(arg_ptr, msg);
-	vsnprintf(string, TMP_BUF_SIZE, msg, arg_ptr);
-	va_end(arg_ptr);
-	qDebug() << string;
-	return;
+        (void)ctx;
+        const uint TMP_BUF_SIZE = 1024;
+        char       string[TMP_BUF_SIZE];
+        va_list    arg_ptr;
+        va_start(arg_ptr, msg);
+        vsnprintf(string, TMP_BUF_SIZE, msg, arg_ptr);
+        va_end(arg_ptr);
+        qDebug() << string;
+        return;
 }
 */
+
+void checkXPahtIsRelative(const xmlChar* xpathExpression) {
+	std::string path = (char*)xpathExpression;
+
+	if (path.starts_with("//")) {
+		throw ExceptionV2(F("A xPath relative to current node must be .// ! You forget the . in {}", path));
+	}
+	if (path.starts_with("/")) {
+		throw ExceptionV2(F("A xPath relative to current node must be ./ ! You forget the . in {}", path));
+	}
+}
+
+void checkXPathIsValid(const xmlChar* xpathExpression) {
+	xmlXPathCompExprPtr xpathCompExpr = xmlXPathCtxtCompile(NULL, xpathExpression);
+
+	if (xpathCompExpr == NULL) {
+
+		xmlErrorPtr error = xmlGetLastError();
+		std::string errMsg;
+		if (error != NULL) {
+			errMsg.append(error->message);
+			xmlResetLastError();
+		}
+
+		throw ExceptionV2(F("invalid Xpath {}: Error : {}", (char*)xpathExpression, errMsg));
+	}
+
+	xmlXPathFreeCompExpr(xpathCompExpr);
+}
 
 XPath::Res XPath::read(const char* data, int size) {
 
@@ -46,6 +81,7 @@ XPath::Res XPath::read(const char* data, int size) {
 		return Res{false, msg};
 	}
 	xpath_ctx = xmlXPathNewContext(doc);
+
 	return Res{true, QString()};
 }
 
@@ -74,46 +110,35 @@ XPath::~XPath() {
 	xpath_ctx = nullptr;
 }
 
-QByteArray XPath::getLeaf(const char* path, uint& founded) {
-	auto list = getLeafs(path);
-	if (list.isEmpty()) {
-		founded = 0;
-		return QByteArray();
+std::optional<QByteArray> XPath::getLeaf(const char* path, xmlNodePtr node) {
+
+	if (node) {
+		checkXPahtIsRelative((const xmlChar*)path);
 	}
-	founded = list.size();
-	return list.at(0);
-}
 
-QByteArray XPath::getLeaf(const char* path) {
-	uint num;
-	return getLeaf(path, num);
-}
+	checkXPathIsValid((const xmlChar*)path);
 
-QByteArray XPath::getLeaf(const char* path, xmlNodePtr node) {
-	QByteArray        res;
 	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
-	if (xpathObj == nullptr) {
-		return res;
-	} else {
+	if (xpathObj != nullptr) {
+
 		auto nodes = xpathObj->nodesetval;
 		if (nodes->nodeNr == 0) {
-			return res;
+			return {};
 		}
 		auto _node = nodes->nodeTab[0];
 		auto vv    = xmlNodeGetContent(_node);
 		if (vv != nullptr) {
+			QByteArray res;
 			res.setRawData((const char*)vv, strlen((const char*)vv));
+			return res;
 		}
-		//		for (int var = 0; var < nodes->nodeNr; ++var) {
-
-		//		}
 	}
-	return res;
+	return {};
 }
 
-QByteArrayList XPath::getLeafs(const char* path) {
+QByteArrayList XPath::getLeafs(const char* path, xmlNodePtr outerNode) {
 	QByteArrayList res;
-	auto           nodes = getNodes(path);
+	auto           nodes = getNodes(path, outerNode);
 	for (auto&& node : nodes) {
 
 		auto vv = node.getContent();
@@ -126,37 +151,51 @@ QByteArrayList XPath::getLeafs(const char* path) {
 	return res;
 }
 
-std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> xPaths, xmlNodeSet* nodes) {
-	std::vector<std::vector<const char*>> res;
-	res.resize(nodes->nodeNr);
-	if (nodes == nullptr) {
-		return res;
-	}
-	for (uint nodePos = 0; nodePos < (uint)nodes->nodeNr; ++nodePos) {
-		auto node = nodes->nodeTab[nodePos];
-		for (uint pathPos = 0; pathPos < xPaths.size(); ++pathPos) {
-			auto                      path     = xPaths.at(pathPos);
-			std::vector<const char*>& cur      = res.at(nodePos);
-			xmlXPathObjectPtr         xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
-			if (xpathObj == nullptr) {
-				return res;
-			}
-			auto _nodes = xpathObj->nodesetval;
-			for (int var = 0; var < _nodes->nodeNr; ++var) {
-				auto _node = _nodes->nodeTab[var];
-				auto vv    = xmlNodeGetContent(_node);
-				if (vv != nullptr) {
-					cur.push_back((const char*)vv);
-				}
-			}
-		}
-	}
-	return res;
-}
+//std::vector<std::vector<const char*>> XPath::getLeafs(std::vector<const char*> xPaths, xmlNodeSet* nodes) {
+//	std::vector<std::vector<const char*>> res;
+//	res.resize(nodes->nodeNr);
+//	if (nodes == nullptr) {
+//		return res;
+//	}
+//	for (uint nodePos = 0; nodePos < (uint)nodes->nodeNr; ++nodePos) {
+//		auto node = nodes->nodeTab[nodePos];
+//		for (uint pathPos = 0; pathPos < xPaths.size(); ++pathPos) {
+//			auto                      path = xPaths.at(pathPos);
+//			std::vector<const char*>& cur  = res.at(nodePos);
+
+//			if (node) {
+//				checkXPahtIsRelative((const xmlChar*)path);
+//			}
+
+//			checkXPathIsValid((const xmlChar*)path);
+
+//			xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
+//			if (xpathObj == nullptr) {
+//				return res;
+//			}
+//			auto _nodes = xpathObj->nodesetval;
+//			for (int var = 0; var < _nodes->nodeNr; ++var) {
+//				auto _node = _nodes->nodeTab[var];
+//				auto vv    = xmlNodeGetContent(_node);
+//				if (vv != nullptr) {
+//					cur.push_back((const char*)vv);
+//				}
+//			}
+//		}
+//	}
+//	return res;
+//}
 
 std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode* node, uint limit) {
 	std::vector<XmlNode> nodeVec;
 	xmlXPathObjectPtr    xpathObj;
+
+	if (node) {
+		checkXPahtIsRelative((const xmlChar*)path);
+	}
+
+	checkXPathIsValid((const xmlChar*)path);
+
 	if (node) {
 		xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xpath_ctx);
 	} else {
@@ -184,41 +223,29 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode* node, uint limit
 	return nodeVec;
 }
 
-XmlNode XmlNode::searchNode(const char* path) const {
+std::optional<XmlNode> XmlNode::getNode(const char* path) const {
 	auto nodes = xml->getNodes(path, node, 1);
 	if (nodes.empty()) {
-		return XmlNode();
+		return {};
 	}
 	return nodes.at(0);
 }
 
-std::vector<XmlNode> XmlNode::searchNodes(const char* path) const {
+std::vector<XmlNode> XmlNode::getNodes(const char* path) const {
 	return xml->getNodes(path, node);
 }
 
-QByteArray XmlNode::searchLeaf(const char* path) const {
-	QByteArray        res;
-	xmlXPathObjectPtr xpathObj = xmlXPathNodeEval(node, (const xmlChar*)path, xml->xpath_ctx);
-	if (xpathObj == nullptr) {
-		return res;
-	} else {
-		auto nodes = xpathObj->nodesetval;
-		if (nodes->nodeNr == 0) {
-			return res;
-		}
-		auto _node = nodes->nodeTab[0];
-		auto vv    = xmlNodeGetContent(_node);
-		if (vv != nullptr) {
-			res.setRawData((const char*)vv, strlen((const char*)vv));
-		}
-		//		for (int var = 0; var < nodes->nodeNr; ++var) {
+std::optional<QByteArray> XmlNode::getLeaf(const char* path) const {
+	return xml->getLeaf(path, node);
+}
 
-		//		}
-	}
-	return res;
+QByteArrayList XmlNode::getLeafs(const char* path) {
+	return xml->getLeafs(path, node);
 }
 
 void walkTree(xmlNode* a_node) {
+	//use like walkTree(xmlDocGetRootElement(html.doc));
+
 	xmlNode* cur_node = NULL;
 	xmlAttr* cur_attr = NULL;
 	for (cur_node = a_node; cur_node; cur_node = cur_node->next) {
@@ -226,11 +253,15 @@ void walkTree(xmlNode* a_node) {
 		printf("Got tag : %s\n", cur_node->name);
 		for (cur_attr = cur_node->properties; cur_attr; cur_attr = cur_attr->next) {
 
-			printf("  -> with attribute : %s\n", cur_attr->name);
+			xmlChar* value = xmlNodeListGetString(cur_node->doc, cur_attr->children, 1);
+
+			printf("  -> with attribute : %s : {%s} \n", cur_attr->name, value);
+			xmlFree(value);
 		}
 		walkTree(cur_node->children);
 	}
 }
+
 QByteArray XmlNode::getProp(const char* property) const {
 	QByteArray q;
 	auto       vv = xmlGetProp(node, (const xmlChar*)property);
@@ -268,5 +299,49 @@ XmlNode XmlNode::operator[](const char* path) const {
 	 * or implement the nice thread local override to tweak the behaviour
 	 */
 	QByteArray pathFull = QBL("./*[name()='") + path + QBL("']");
-	return searchNode(pathFull.constData());
+	return getNode(pathFull.constData()).value_or(XmlNode());
+}
+
+XmlNode::operator xmlNodePtr() const {
+	return node;
+}
+
+//https://www.html-tidy.org/developer/
+auto cleanse1(const QByteArray& original) -> std::expected<QByteArray, std::string> {
+	TidyBuffer output = {0, nullptr, 0, 0, 0};
+	TidyBuffer errbuf = {0, nullptr, 0, 0, 0};
+	int        rc     = -1;
+	bool       ok;
+
+	TidyDoc tdoc = tidyCreate(); // Initialize "document"
+
+	ok = tidyOptSetBool(tdoc, TidyXhtmlOut, Bool::yes); // Convert to XHTML
+	ok &= tidyOptSetBool(tdoc, TidyDropEmptyElems, Bool::yes);
+	ok &= tidyOptSetInt(tdoc, TidyIndentContent, 2);
+
+	if (ok)
+		rc = tidySetErrorBuffer(tdoc, &errbuf); // Capture diagnostics
+	if (rc >= 0)
+		rc = tidyParseString(tdoc, original.constData()); // Parse the input
+	if (rc >= 0)
+		rc = tidyCleanAndRepair(tdoc); // Tidy it up!
+	if (rc >= 0)
+		rc = tidyRunDiagnostics(tdoc); // Kvetch
+	if (rc > 1)                            // If error, force output.
+		rc = (tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1);
+	if (rc >= 0)
+		rc = tidySaveBuffer(tdoc, &output); // Pretty Print
+
+	if (rc > 1) {
+		std::string msg = F("error {} in libtidy cleaning: {} ", (char*)tidyErrorCodeAsKey(rc), (char*)errbuf.bp);
+		return std::unexpected(msg);
+	}
+
+	QByteArray res;
+	res.append((const char*)output.bp, output.size);
+
+	tidyBufFree(&output);
+	tidyBufFree(&errbuf);
+	tidyRelease(tdoc);
+	return res;
 }
