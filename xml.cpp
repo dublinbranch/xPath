@@ -306,6 +306,22 @@ XmlNode::operator xmlNodePtr() const {
 	return node;
 }
 
+// Function to recursively traverse the parse tree and remove script tags
+void removeScriptTags(TidyDoc tdoc, TidyNode node) {
+	TidyNode child;
+	for (child = tidyGetChild(node); child; child = tidyGetNext(child)) {
+		TidyTagId tagId = tidyNodeGetId(child);
+		if (tagId == TidyTag_SCRIPT) {
+			child = tidyDiscardElement(tdoc, child);
+		} else {
+			removeScriptTags(tdoc, child); // Recursively process child nodes
+		}
+		if (!child) {
+			break;
+		}
+	}
+}
+
 //https://www.html-tidy.org/developer/
 auto cleanse1(const QByteArray& original) -> std::expected<QByteArray, std::string> {
 	TidyBuffer output = {0, nullptr, 0, 0, 0};
@@ -327,10 +343,14 @@ auto cleanse1(const QByteArray& original) -> std::expected<QByteArray, std::stri
 		rc = tidyCleanAndRepair(tdoc); // Tidy it up!
 	if (rc >= 0)
 		rc = tidyRunDiagnostics(tdoc); // Kvetch
-	if (rc > 1)                            // If error, force output.
+	if (rc > 1) {                          // If error, force output.
 		rc = (tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1);
-	if (rc >= 0)
+	}
+
+	if (rc >= 0) {
+		removeScriptTags(tdoc, tidyGetRoot(tdoc));
 		rc = tidySaveBuffer(tdoc, &output); // Pretty Print
+	}
 
 	if (rc > 1) {
 		std::string msg = F("error {} in libtidy cleaning: {} ", (char*)tidyErrorCodeAsKey(rc), (char*)errbuf.bp);
