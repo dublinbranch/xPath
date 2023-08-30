@@ -225,10 +225,16 @@ std::vector<XmlNode> XPath::getNodes(const char* path, xmlNode* node, uint limit
 
 std::optional<XmlNode> XmlNode::getNode(const char* path) const {
 	auto nodes = xml->getNodes(path, node, 1);
-	if (nodes.empty()) {
+	switch (nodes.size()) {
+	case 0:
 		return {};
+		break;
+	case 1:
+		return nodes.at(0);
+	default:
+		throw ExceptionV2(F("multiple nodes found for {}", path));
+		break;
 	}
-	return nodes.at(0);
 }
 
 std::vector<XmlNode> XmlNode::getNodes(const char* path) const {
@@ -285,7 +291,7 @@ QByteArray XmlNode::getContent() const {
 	auto       vv = xmlNodeGetContent(node);
 	QByteArray res;
 	if (vv != nullptr) {
-		res.append((const char*)vv, strlen((const char*)vv));
+		res.append((const char*)vv, static_cast<int>(strlen((const char*)vv)));
 		xmlFree(vv);
 	}
 	return res;
