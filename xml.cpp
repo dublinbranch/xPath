@@ -129,7 +129,7 @@ std::optional<QByteArray> XPath::getLeaf(const char* path, xmlNodePtr node) {
 		auto vv    = xmlNodeGetContent(_node);
 		if (vv != nullptr) {
 			QByteArray res;
-			res.setRawData((const char*)vv, strlen((const char*)vv));
+			res.setRawData((const char*)vv, (uint)strlen((const char*)vv));
 			return res;
 		}
 	}
@@ -144,7 +144,7 @@ QByteArrayList XPath::getLeafs(const char* path, xmlNodePtr outerNode) {
 		auto vv = node.getContent();
 		if (vv != nullptr) {
 			QByteArray v;
-			v.append((const char*)vv, strlen((const char*)vv));
+			v.append((const char*)vv, (uint)strlen((const char*)vv));
 			res.append(v);
 		}
 	}
@@ -272,7 +272,7 @@ QByteArray XmlNode::getProp(const char* property) const {
 	QByteArray q;
 	auto       vv = xmlGetProp(node, (const xmlChar*)property);
 	if (vv != nullptr) {
-		q.append((const char*)vv, strlen((const char*)vv));
+		q.append((const char*)vv, (uint)strlen((const char*)vv));
 		xmlFree(vv);
 	}
 	return q;
